@@ -8,10 +8,18 @@ if not pygame.image.get_extended(): print ('Warning, images disabled')
 
 #store the path to our shit for the functions
 main_dir = os.path.split(os.path.abspath(__file__))[0]
+clock = pygame.time.Clock() 
+#above should be in main process
+
+SCREENRECT = pygame.Rect(0, 0, 640, 480)
+BLACK = (0,0,0)
+WHITE = (255,255,255)
 
 """***********************
 Game functions
 ***********************"""
+class NoneSound:
+	def play(self): pass
 
 def load_music(file):
 	"loads a sound file, prepares it for play"
@@ -19,18 +27,40 @@ def load_music(file):
 		def play(self): pass
 	if not pygame.mixer:
 		return NoneSound()
-	sound_to_load = os.path.join(main_dir, 'data', file)
+	music_to_load = os.path.join(main_dir, 'data', file)
 	try:
-		audio_export = pygame.mixer.music.load(sound_to_load)
+		music_export = pygame.mixer.music.load(music_to_load)
 	except pygame.error as message:
-		print ('Cannot load audio file')
+		print ('Cannot load music file')
 		print ('tried to load the following;')
-		print (sound_to_load)
+		print (music_to_load)
 		print ('Error message:')
 		raise SystemExit(message)
-	return audio_export
+	return music_export
 
-def load_image(file, colorkey=-1):
+def load_sound(file):
+	if not pygame.mixer: return NoneSound()
+	file = os.path.join(main_dir, 'data', file)
+	try:
+		sound = pygame.mixer.Sound(file=file)
+		return sound
+	except pygame.error:
+		print ('Warning, unable to load, %s' % file)
+	return NoneSound()
+
+def load_image(file):
+	"loads an unfiltered image"
+	if not pygame.image.get_extended(): 
+		raise SystemExit("Could not load image; extended images not available")
+	image_to_load = os.path.join(main_dir, 'data', file)
+	try:
+		image_export = pygame.image.load(image_to_load)
+	except pygame.error as message:
+		print ('Could not load image')
+		raise SystemExit(message)
+	return image_export, image_export.get_rect()
+	
+def load_sprite(file, colorkey=-1):
 	"loads an image, prepares it for play"
 	if not pygame.image.get_extended(): 
 		raise SystemExit("Could not load image; extended images not available")
@@ -48,28 +78,37 @@ def load_image(file, colorkey=-1):
 	return image_export, image_export.get_rect()
 
 """***********************
-More constants
-***********************"""
-
-
-"""***********************
 classes & sprites
 ***********************"""
 
-class Pentagon(pygame.sprite.Sprite):
-	"""It's our player pentagon"""
-	def __init__(self, color, width, height):
-		pygame.sprite.Sprite.__init__(self) #call Sprite initializer
-		self.image, self.rect = avatar
+class Player(pygame.sprite.Sprite):
+	"""our player pentagon"""
+	speed = 10
+	bounce = 24
 	
-	def update(self):
-        #movecode goes here
-		mymove = 0
+	def __init__(self,passedimage,passedmidbottom):
+		pygame.sprite.Sprite.__init__(self) #call Sprite initializer
+		self.image = passedimage
+		self.rect = self.image.get_rect(midbottom=passedmidbottom)
+		self.origtop = self.rect.top
+		self.facing = -1
+	
+	def move(self, direction):
+		pygame.sprite.Sprite.__init__(self, self.containers)
+		if direction: 
+			self.facing = direction
+		self.rect.move_ip(direction*self.speed, 0)
+		self.rect = self.rect.clamp(SCREENRECT)
+		self.rect.top = self.origtop - (self.rect.left//self.bounce%2)
 
 class Wall(pygame.sprite.Sprite):
 	#black rectangle, stops movement
-	mywall = (255,255,255)
+	def __init__(self,passed_size,passed_pos):
+		pygame.sprite.Sprite.__init__(self, self.containers) #call Sprite initializer
+		self.image = pygame.Surface(passed_size)
+		self.rect = passed_pos
 
+		
 class Pit(pygame.sprite.Sprite):
 	#white (tansparent?) rectangle, allows movement
 	mypit = (0,0,0)
@@ -79,71 +118,100 @@ Primary loop
 ***********************"""
 
 #Shouldn't this be Main() or something?
-def main():
+def main(winstyle = 0):
 	#Let's hit it!
 	pygame.init()
-	clock = pygame.time.Clock()
+	
+	#set the icon. Must be done before set_mode.
+	icon = load_image('avatar.png')# load theimage and rect
+	scaled_icon = pygame.transform.scale2x(icon[0]) #select only the image and scale it up
+	pygame.display.set_icon(scaled_icon) #set it as the icon of the screen
 	
 	#setup the screen.
-	screen = pygame.display.set_mode((640, 480))
+	bestdepth = pygame.display.mode_ok(SCREENRECT.size, winstyle, 32)
+	screen = pygame.display.set_mode(SCREENRECT.size, winstyle, bestdepth)
+	background = pygame.Surface(SCREENRECT.size)
 	screen.fill((255, 255, 255))
-	pygame.display.set_caption('Kolor - Plato')
+	background.fill((255, 255, 255))
+	screen.blit(background, (0,0))
+	pygame.display.flip()
 
 	#stores width/height as vars... redundant?
 	screenwidth, screenheight = pygame.display.get_surface().get_size()
 	#other common vars for the map design
 	commonheight = screenheight//10
 	screenbottom = screenheight - commonheight
+	#these *are* redundant since we can just use SCREENRECT modifiers i guess
 	
+	#initial states for variables
 	gameover = False
-	initgame = False
-		
-	avatar = load_image('avatar.png', -1)
+	
+	#apparently you should load images *after* you load the screen
+	avatar = load_sprite('avatar.png', -1)
+	
+	#beautify the screen.
+	pygame.display.set_caption('Kolor - Plato')
+	
+	#groups or something
+	walls = pygame.sprite.Group()
+	pits = pygame.sprite.Group()
+	all = pygame.sprite.RenderUpdates()
+	
+	#i have no idea what i'm doing
+	#"default groups for each sprite class"
+	Player.containers = all
+	Wall.containers = walls, all
+	Pit.containers = pits, all
+	
+	#initialize the sprites
+	player = Player(avatar[0],SCREENRECT.midbottom)
+	#Leveldesign! Place walls by calling Wall([size],[position])
+	#size (x -> rightwards, y -> downwards), top left corner(x,y)
+	#could add an if statement here for multiple levels.
+	Wall([SCREENRECT[2], 1],[SCREENRECT.left, SCREENRECT.bottom -1]) #the floor.
+	Wall([16, 32],[SCREENRECT.right - 100, SCREENRECT.bottom - 32])
+	Wall([16, 32],[SCREENRECT.left + 100, SCREENRECT.bottom - 32])
+	
+	load_music('cityruins.mp3')
+	pygame.mixer.music.play(-1)
+	
+	#let's get looping
 	while not gameover:
-		#we define everything here so we can restart the game with a keybind.
-		#if we don't want the keybind, we can move it up to before the loop!
-		if not initgame:
-			avatar_x = 30
-			avatar_y = 30
-			#screen.blit(avatar, (avatar_x,avatar_y))
-			load_music('cityruins.mp3')
-			pygame.mixer.music.play(-1)
-			"""setup level
-			remember, it's (screen, color, rectangle(left, top, width, height), "width" aka donotfill)
-			use the vars as an anchor point, eg screenbottom - 20"""
-			floor = pygame.draw.rect(screen, (0, 0, 0), pygame.Rect(0, screenbottom, screenwidth, commonheight)) #the floor
-			wall1 = pygame.draw.rect(screen, (0, 0, 0), pygame.Rect(100, screenbottom - 20, 10, 20)) # a wall!
-			wall2 = pygame.draw.rect(screen, (0, 0, 0), pygame.Rect(300, screenbottom - 40, 20, 40)) # another wall!
-			initgame = True
+		
+		all.clear(screen,background) #clean screen
+		all.update() #reset sprites
+
+		#Quitting the game with the [X] or escape
 		for event in pygame.event.get():
-			if event.type == pygame.QUIT:
-				gameover = True
-				print("Recieved quit command.")
-		pygame.draw.rect(screen, (255, 255, 255), pygame.Rect(avatar_x, avatar_y, 16, 16))
+			if event.type == pygame.QUIT or \
+				(event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
+					load_sound('adios.ogg').play(0,1142)
+					pygame.mixer.music.fadeout(1000)
+					pygame.time.wait(1000)
+					gameover = True
+					print("Recieved quit command.")
+					
+		#move the player
 		pressed = pygame.key.get_pressed()
-		"""something like if avatar_y + 3 != dangerzone... how do
-		we even define the dangerzone? check against the floor and walls every time?
-		assign rectangles as the dangerzone, check if values are similar...?"""
-		"""pygame.sprite.Sprite is the function we want to use for this.
-		https://www.pygame.org/docs/ref/sprite.html"""
-		#if pressed[pygame.K_UP]: avatar_y -= 3
-		if avatar_y < (screenbottom - 18):
-			avatar_y += 3
-			#acceleration?
-		if pressed[pygame.K_DOWN]: avatar_y += 3
-		if pressed[pygame.K_LEFT]: 
-			print(wall1)
-			#if not ((avatar_x - 3) == wall1):
-				#avatar_x -= 3
-		if pressed[pygame.K_RIGHT]: 
-			print(wall2)
-			#if not ((avatar_x + 3) == wall1):
-				#avatar_x += 3
-		if pressed[pygame.K_r]: 
-			initgame = False
-			pygame.mixer.music.stop()
-		#screen.blit(avatar, (avatar_x,avatar_y))
-		pygame.display.flip()
-		clock.tick(120)
+		if pressed[pygame.K_a] or pressed[pygame.K_LEFT]:
+			direction = -1
+		elif pressed[pygame.K_d] or pressed[pygame.K_RIGHT]:
+			direction = 1
+		else:
+			direction = 0
+		player.move(direction)
+		
+		print(player)
+		print(walls)
+		#wall_collisions = pygame.sprite.spritecollide(player, walls, 0)
+		#for wall in wall_collisions:
+		#	player.move(-direction)
+		
+		#This should update the scene
+		dirty = all.draw(screen)
+		pygame.display.update(dirty)
+		
+		#framerate cap
+		clock.tick(60)
 		
 if __name__ == '__main__': main()
