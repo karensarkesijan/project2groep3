@@ -87,14 +87,13 @@ class Player(pygame.sprite.Sprite):
 	bounce = 24
 	
 	def __init__(self,passedimage,passedmidbottom):
-		pygame.sprite.Sprite.__init__(self) #call Sprite initializer
+		pygame.sprite.Sprite.__init__(self,self.containers) #call Sprite initializer
 		self.image = passedimage
 		self.rect = self.image.get_rect(midbottom=passedmidbottom)
 		self.origtop = self.rect.top
 		self.facing = -1
 	
 	def move(self, direction):
-		pygame.sprite.Sprite.__init__(self, self.containers)
 		if direction: 
 			self.facing = direction
 		self.rect.move_ip(direction*self.speed, 0)
@@ -201,8 +200,7 @@ def main(winstyle = 0):
 			direction = 0
 		player.move(direction)
 		
-		print(player)
-		print(walls)
+		#walls stop the player
 		#wall_collisions = pygame.sprite.spritecollide(player, walls, 0)
 		#for wall in wall_collisions:
 		#	player.move(-direction)
