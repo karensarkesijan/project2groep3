@@ -76,15 +76,15 @@ def load_sprite(file, colorkey=-1):
 			colorkey = image_export.get_at((0,0))
 		image_export.set_colorkey(colorkey)
 	return image_export, image_export.get_rect()
-
+	
 """***********************
 classes & sprites
 ***********************"""
 
 class Player(pygame.sprite.Sprite):
 	"""our player pentagon"""
-	speed = 10
-	bounce = 24
+	speed = 5
+	bounce = 48
 	
 	def __init__(self,passedimage,passedmidbottom):
 		pygame.sprite.Sprite.__init__(self,self.containers) #call Sprite initializer
@@ -102,11 +102,19 @@ class Player(pygame.sprite.Sprite):
 
 class Wall(pygame.sprite.Sprite):
 	#black rectangle, stops movement
-	def __init__(self,passed_size,passed_pos):
+	def __init__(self,passed):
 		pygame.sprite.Sprite.__init__(self, self.containers) #call Sprite initializer
-		self.image = pygame.Surface(passed_size)
-		self.rect = passed_pos
+		passurface = passed[2], passed[3]
+		self.image = pygame.Surface(passurface)
+		self.rect = passed
 
+class Floor(pygame.sprite.Sprite):
+	#black rectangle, stops gravity (at some point)
+	def __init__(self,passed):
+		pygame.sprite.Sprite.__init__(self, self.containers) #call Sprite initializer
+		passurface = passed[2], passed[3]
+		self.image = pygame.Surface(passurface)
+		self.rect = passed
 		
 class Pit(pygame.sprite.Sprite):
 	#white (tansparent?) rectangle, allows movement
@@ -152,24 +160,41 @@ def main(winstyle = 0):
 	pygame.display.set_caption('Kolor - Plato')
 	
 	#groups or something
-	walls = pygame.sprite.Group()
+	wall_list = pygame.sprite.Group()
+	floor_list = pygame.sprite.Group()
 	pits = pygame.sprite.Group()
 	all = pygame.sprite.RenderUpdates()
 	
 	#i have no idea what i'm doing
 	#"default groups for each sprite class"
 	Player.containers = all
-	Wall.containers = walls, all
+	Wall.containers = wall_list, all
+	Floor.containers = floor_list, all
 	Pit.containers = pits, all
 	
 	#initialize the sprites
 	player = Player(avatar[0],SCREENRECT.midbottom)
-	#Leveldesign! Place walls by calling Wall([size],[position])
-	#size (x -> rightwards, y -> downwards), top left corner(x,y)
-	#could add an if statement here for multiple levels.
-	Wall([SCREENRECT[2], 1],[SCREENRECT.left, SCREENRECT.bottom -1]) #the floor.
-	Wall([16, 32],[SCREENRECT.right - 100, SCREENRECT.bottom - 32])
-	Wall([16, 32],[SCREENRECT.left + 100, SCREENRECT.bottom - 32])
+	
+	"""
+	Leveldesign! Place walls by calling Wall() with a rectangle as argument
+	Position from of the left face, position of the top face, width, height
+	Use the first wall as an example. 
+	could add an if statement here for multiple levels.
+	"""
+	
+	Floor(pygame.Rect(SCREENRECT.left, SCREENRECT.bottom -1, SCREENRECT.right, SCREENRECT.bottom)) #Floor
+	
+	#doing these two like this so I can actually read it.
+	#should probably write macros for SR.left and such
+	rleft = SCREENRECT.left + 100
+	rtop = SCREENRECT.bottom - 32
+	wallrect = pygame.Rect(rleft,rtop,16,32)
+	Wall(wallrect)
+	
+	rleft = SCREENRECT.right - 100
+	rtop = SCREENRECT.bottom - 32
+	wallrect = pygame.Rect(rleft,rtop,16,32)
+	Wall(wallrect)
 	
 	load_music('cityruins.mp3')
 	pygame.mixer.music.play(-1)
@@ -201,9 +226,9 @@ def main(winstyle = 0):
 		player.move(direction)
 		
 		#walls stop the player
-		#wall_collisions = pygame.sprite.spritecollide(player, walls, 0)
-		#for wall in wall_collisions:
-		#	player.move(-direction)
+		wall_collisions = pygame.sprite.spritecollide(player, wall_list, 0)
+		for wall in (wall_collisions):
+			player.move(-direction) #technically bounces him back as fast as he's moving
 		
 		#This should update the scene
 		dirty = all.draw(screen)
