@@ -83,8 +83,11 @@ classes & sprites
 
 class Player(pygame.sprite.Sprite):
 	"""our player pentagon"""
-	speed = 5
+	speed_x = 5
+	speed_y = 2
+	change_y = 0
 	bounce = 48
+	wall_list = []
 	
 	def __init__(self,passedimage,passedmidbottom):
 		pygame.sprite.Sprite.__init__(self,self.containers) #call Sprite initializer
@@ -93,13 +96,37 @@ class Player(pygame.sprite.Sprite):
 		self.origtop = self.rect.top
 		self.facing = -1
 	
+	def calc_grav(self):
+		#Calculate effect of gravity.
+		if self.change_y == 0:
+			self.change_y = 9.8
+		elif self.change_y >= -9.8:
+			self.change_y -= .35
+			print(self.change_y)
+		else:
+			self.change = -9.8
+ 
+		# See if we are on the ground.
+		if self.change_y >= 0:
+			wall_collisions = pygame.sprite.spritecollide(self, self.wall_list, 0)
+			for wall in (wall_collisions):
+				self.change_y = 0
+				self.rect.y = SCREENRECT.height - self.rect.height
+
 	def move(self, direction):
 		if direction: 
 			self.facing = direction
-		self.rect.move_ip(direction*self.speed, 0)
+		#moving left-to-right
+		self.rect.move_ip(direction*self.speed_x, 0)
 		self.rect = self.rect.clamp(SCREENRECT)
 		self.rect.top = self.origtop - (self.rect.left//self.bounce%2)
+		#gravity and jumping
 
+	def jump(self):
+		self.calc_grav()
+		self.rect.move_ip(0,-self.speed_y*self.change_y)
+		#self.rect.move_ip(0,-50)
+			
 class Wall(pygame.sprite.Sprite):
 	#black rectangle, stops movement
 	def __init__(self,passed):
@@ -209,21 +236,25 @@ def main(winstyle = 0):
 		for event in pygame.event.get():
 			if event.type == pygame.QUIT or \
 				(event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
+					print("Recieved quit command.")
 					load_sound('adios.ogg').play(0,1142)
 					pygame.mixer.music.fadeout(1000)
 					pygame.time.wait(1000)
 					gameover = True
-					print("Recieved quit command.")
 					
 		#move the player
 		pressed = pygame.key.get_pressed()
-		if pressed[pygame.K_a] or pressed[pygame.K_LEFT]:
-			direction = -1
-		elif pressed[pygame.K_d] or pressed[pygame.K_RIGHT]:
-			direction = 1
-		else:
-			direction = 0
-		player.move(direction)
+		if pressed[pygame.K_a] or pressed[pygame.K_LEFT] or pressed[pygame.K_d] or pressed[pygame.K_RIGHT]:
+			if pressed[pygame.K_a] or pressed[pygame.K_LEFT]:
+				direction = -1
+			elif pressed[pygame.K_d] or pressed[pygame.K_RIGHT]:
+				direction = 1
+			else:
+				direction = 0
+			player.move(direction)
+		
+		if pressed[pygame.K_SPACE]:
+			player.jump()
 		
 		#walls stop the player
 		wall_collisions = pygame.sprite.spritecollide(player, wall_list, 0)
