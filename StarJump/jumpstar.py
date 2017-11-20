@@ -6,7 +6,7 @@ window_y = 550
 
 init()
 window = display.set_mode((window_x, window_y))
-display.set_caption('Stick Jump!')
+display.set_caption('Star Jump!')
 clock = time.Clock()
 
 
