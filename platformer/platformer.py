@@ -51,7 +51,7 @@ def load_sound(file):
 def load_image(file):
 	"loads an unfiltered image"
 	if not pygame.image.get_extended(): 
-		raise SystemExit("Could not load image; extended images not available")
+		raise SystemExit("extended images not available")
 	image_to_load = os.path.join(main_dir, 'data', file)
 	try:
 		image_export = pygame.image.load(image_to_load)
