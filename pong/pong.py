@@ -124,6 +124,7 @@ def main():
     ai_paddle = AIPaddle(screensize)
     player_paddle = PlayerPaddle(screensize)
 
+    game_over = False
     running = True
 
     while running:
@@ -144,17 +145,17 @@ def main():
                 elif event.key == K_DOWN and player_paddle.direction == 1:
                     player_paddle.direction = 0
 
+
         ai_paddle.update(pong)
         player_paddle.update()
         pong.update(player_paddle, ai_paddle)
 
         if pong.hit_edge_right:
-            print('Game over!')
+            print ('You won!')
             running = False
         elif pong.hit_edge_left:
-            print ('Congratulations! You won!')
+            print ('You lost!')
             running = False
-
 
 
         screen.fill((0,0,0))
