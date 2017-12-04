@@ -49,13 +49,20 @@ def main(winstyle = 0):
 				return
 			elif event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
 				return
+			elif event.type == pygame.KEYDOWN and event.key == pygame.K_w:
+				if SelectedGame != 0:
+					SelectedGame = SelectedGame - 1
+					print("SelectedGame = " + str(SelectedGame))
+				else:
+					SelectedGame = 3
+					print("Selectedgame reset to " + str(SelectedGame))
 			elif event.type == pygame.KEYDOWN and event.key == pygame.K_s:
 				if SelectedGame != 3:
 					SelectedGame = SelectedGame + 1
 					print("SelectedGame = " + str(SelectedGame))
 				else:
 					SelectedGame = 0
-					print("Selectedgame reset")
+					print("Selectedgame reset to " + str(SelectedGame))
 			elif event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
 				print("launching " + str(SelectedGame))
 				chosengame = selectablegames [SelectedGame]
