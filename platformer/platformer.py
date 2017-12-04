@@ -27,7 +27,6 @@ def load_music(file):
 		def play(self): pass
 	if not pygame.mixer:
 		return NoneSound()
-	music_to_load = os.path.join(main_dir, 'data', file)
 	try:
 		music_export = pygame.mixer.music.load(music_to_load)
 	except pygame.error as message:
