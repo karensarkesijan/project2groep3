@@ -5,11 +5,12 @@ main_dir = os.path.split(os.path.abspath(__file__))[0]
 platformer_dir = os.path.join(main_dir, 'platformer')
 platformer_file = platformer_dir + "\platformer.py"
 space_dir = os.path.join(main_dir, 'python game stuff')
-space_file =  space_dir + "\game.py"
+space_file =  str(space_dir) + "\game.py"
 pong_dir = os.path.join(main_dir, 'pong')
 pong_file =  pong_dir + "\pong.py"
 starjump_dir = os.path.join(main_dir, 'StarJump')
 starjump_file =  starjump_dir + "\jumpstar.py"
+selectablegames = [platformer_file,space_file,pong_file,starjump_file]
 
 clock = pygame.time.Clock() 
 SCREENRECT = pygame.Rect(0, 0, 640, 480)
@@ -17,8 +18,8 @@ BLACK = (0,0,0)
 WHITE = (255,255,255)
 
 def launch_game(name):
-	adjustedname = name + "_file"
-	os.system(adjustedname)
+	print(name)
+	os.system(name)
 		
 def main(winstyle = 0):	
 	pygame.init()
@@ -30,6 +31,8 @@ def main(winstyle = 0):
 	background.fill(WHITE)
 	screen.blit(background, (0,0))
 	pygame.display.flip()
+	
+	SelectedGame = 0
 
 	
 	if pygame.font:
@@ -46,10 +49,21 @@ def main(winstyle = 0):
 				return
 			elif event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
 				return
-
+			elif event.type == pygame.KEYDOWN and event.key == pygame.K_s:
+				if SelectedGame != 3:
+					SelectedGame = SelectedGame + 1
+					print("SelectedGame = " + str(SelectedGame))
+				else:
+					SelectedGame = 0
+					print("Selectedgame reset")
+			elif event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
+				print("launching " + str(SelectedGame))
+				chosengame = selectablegames [SelectedGame]
+				launch_game(chosengame)
 		#Draw Everything
 		screen.blit(background, (0, 0))
 		pygame.display.flip()
+		
 		
 		clock.tick(60)	
 		
