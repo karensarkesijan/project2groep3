@@ -8,16 +8,7 @@ init()
 window = display.set_mode((window_x, window_y))
 display.set_caption('Star Jump!')
 clock = time.Clock()
-font2 = font.SysFont(None, 25)
-white = (255,255,255)
-black = (0,0,0)
-red = (255,0,0)
 
-gameExit = False
-
-def message_to_screen(msg,color):
-    screen_text = font2.render(msg, True, color)
-    window.blit(screen_text, [window_x/2, window_y/2])
 
 class Stick_Man:
     def __init__(self):       
@@ -272,8 +263,5 @@ while True:
 
     show_score(info['score'],1)
     show_score(info['high_score'],0)
-    
+
     display.update()
-    
-
-
