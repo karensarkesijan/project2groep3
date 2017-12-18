@@ -1,5 +1,10 @@
 from pygame import *
 import random
+from tkinter import *
+from tkinter import messagebox
+
+k().wm_withdraw() #to hide the main window
+messagebox.showinfo('Continue','OK')
 
 window_x = 500
 window_y = 550
@@ -13,7 +18,6 @@ white = (255,255,255)
 black = (0,0,0)
 red = (255,0,0)
 
-gameExit = False
 
 def message_to_screen(msg,color):
     screen_text = font2.render(msg, True, color)
@@ -234,7 +238,6 @@ info = {
     'high_score': 0
     }
 
-
 stick_man = Stick_Man()
 platform_manager = Platform_Manager()
 
@@ -254,7 +257,7 @@ while True:
         info['screen_y'] = 0
         stick_man = Stick_Man()
         platform_manager = Platform_Manager()
-
+                
     clock.tick(60)
 
     #DISPLAY THINGS
